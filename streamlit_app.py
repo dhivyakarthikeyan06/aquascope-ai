@@ -3,27 +3,27 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 
-# ---------- PAGE CONFIGURATION ----------
+# ---------- PAGE CONFIG ----------
 st.set_page_config(
     page_title="AquaScope AI",
     page_icon="🔬",
     layout="wide"
 )
 
-# ---------- LOAD TRAINED MODEL ----------
+# ---------- LOAD MODEL ----------
 @st.cache_resource
 def load_model():
-    model = tf.keras.models.load_model(
+    return tf.keras.models.load_model(
         "aquascope_model.keras",
         compile=False
     )
-    return model
 
 model = load_model()
 
-# ---------- CLASS INFORMATION ----------
+# ---------- CLASSES ----------
 class_names = ["Ciliates", "Diatoms"]
 
+# ---------- CHARACTERISTICS ----------
 characteristics = {
     "Ciliates": [
         "Single-celled microorganisms",
@@ -38,6 +38,9 @@ characteristics = {
         "Important primary producers in aquatic ecosystems"
     ]
 }
+
+# ---------- UNKNOWN THRESHOLD ----------
+UNKNOWN_THRESHOLD = 70.0
 
 # ---------- HEADER ----------
 st.title("🔬 AquaScope AI")
@@ -122,66 +125,84 @@ elif page == "🔬 Microorganism Screening":
                 img = image.resize((224, 224))
 
                 # Convert image to array
-                img_array = np.array(img, dtype=np.float32)
+                img_array = np.array(
+                    img,
+                    dtype=np.float32
+                )
 
                 # Add batch dimension
-                img_array = np.expand_dims(img_array, axis=0)
+                img_array = np.expand_dims(
+                    img_array,
+                    axis=0
+                )
 
-                # Prediction
-                # preprocess_input is already included
-                # inside the trained model
+                # Model prediction
                 prediction = model(
                     img_array,
                     training=False
                 ).numpy()
 
-                predicted_index = np.argmax(prediction[0])
+                predicted_index = np.argmax(
+                    prediction[0]
+                )
+
                 confidence = float(
                     np.max(prediction[0]) * 100
                 )
 
-                predicted_class = class_names[predicted_index]
+                predicted_class = class_names[
+                    predicted_index
+                ]
 
-            # ---------- RESULT ----------
             st.divider()
-
             st.subheader("🧬 Screening Result")
 
-            st.success(
-                f"Predicted Class: {predicted_class}"
-            )
+            # ---------- UNRECOGNIZED CHECK ----------
+            if confidence < UNKNOWN_THRESHOLD:
 
-            st.metric(
-                "Confidence",
-                f"{confidence:.2f}%"
-            )
+                st.error(
+                    "⚠️ Unrecognized Microorganism"
+                )
 
-            # ---------- CHARACTERISTICS ----------
-            st.subheader(
-                f"🔬 Characteristics of {predicted_class}"
-            )
+                st.write(
+                    f"Model confidence: {confidence:.2f}%"
+                )
 
-            for item in characteristics[predicted_class]:
-                st.write(f"• {item}")
-
-            # ---------- CONFIDENCE WARNING ----------
-            if confidence < 60:
                 st.warning(
-                    "Low confidence result. Manual microscopic "
-                    "verification is recommended."
-                )
-            else:
-                st.info(
-                    "The result is based on the trained AI image "
-                    "classification model."
+                    "The image does not confidently match "
+                    "the trained Ciliates or Diatoms classes. "
+                    "Manual verification is recommended."
                 )
 
-            # ---------- PROBABILITY ----------
+            else:
+
+                st.success(
+                    f"Predicted Class: {predicted_class}"
+                )
+
+                st.metric(
+                    "Confidence",
+                    f"{confidence:.2f}%"
+                )
+
+                # ---------- CHARACTERISTICS ----------
+                st.subheader(
+                    f"🔬 Characteristics of {predicted_class}"
+                )
+
+                for item in characteristics[
+                    predicted_class
+                ]:
+                    st.write(f"• {item}")
+
+            # ---------- PROBABILITIES ----------
             st.subheader("📊 Class Probabilities")
 
             for i, class_name in enumerate(class_names):
 
-                probability = prediction[0][i] * 100
+                probability = float(
+                    prediction[0][i] * 100
+                )
 
                 st.write(
                     f"{class_name}: {probability:.2f}%"
@@ -194,7 +215,8 @@ elif page == "🔬 Microorganism Screening":
     else:
 
         st.warning(
-            "Please upload a microscope image to start screening."
+            "Please upload a microscope image "
+            "to start screening."
         )
 
 # ---------- ANALYSIS ----------
@@ -203,8 +225,8 @@ elif page == "📊 Analysis":
     st.header("📊 Analysis Dashboard")
 
     st.write(
-        "AI-based classification results generated from "
-        "microscopic images."
+        "AI-based classification results generated "
+        "from microscopic images."
     )
 
     col1, col2 = st.columns(2)
@@ -219,12 +241,12 @@ elif page == "📊 Analysis":
 
     st.write("### Supported Microorganisms")
 
-    st.write("🔵 **Ciliates**")
-    st.write("🟢 **Diatoms**")
+    st.write("🔵 Ciliates")
+    st.write("🟢 Diatoms")
 
     st.info(
-        "The AI model classifies uploaded microscopic images "
-        "into the supported microorganism classes."
+        "Images with low model confidence are displayed "
+        "as Unrecognized for manual verification."
     )
 
 # ---------- ABOUT ----------
@@ -243,10 +265,10 @@ elif page == "ℹ️ About":
     st.write("• Microscopic image upload")
     st.write("• Rapid screening")
     st.write("• Ciliates and Diatoms classification")
+    st.write("• Unrecognized/low-confidence screening")
     st.write("• Confidence score")
     st.write("• Microorganism characteristics")
     st.write("• Simple user interface")
-    st.write("• Trained deep learning model")
 
     st.divider()
 
@@ -254,7 +276,7 @@ elif page == "ℹ️ About":
 
     st.write(
         "The system uses a MobileNetV2-based transfer learning "
-        "model trained for aquatic microorganism image classification."
+        "model for aquatic microorganism image classification."
     )
 
     st.caption(
