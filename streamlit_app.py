@@ -14,8 +14,7 @@ st.set_page_config(
 @st.cache_resource
 def load_model():
     model = tf.keras.models.load_model(
-        "aquascope_model.h5",
-        custom_objects={"TrueDivide": tf.math.divide},
+        "aquascope_model.keras",
         compile=False
     )
     return model
