@@ -1,4 +1,7 @@
 import streamlit as st
+import tensorflow as tf
+import numpy as np
+from PIL import Image
 
 # ---------- PAGE CONFIGURATION ----------
 st.set_page_config(
@@ -6,6 +9,13 @@ st.set_page_config(
     page_icon="🔬",
     layout="wide"
 )
+
+# ---------- LOAD TRAINED MODEL ----------
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model("aquascope_model.h5")
+
+model = load_model()
 
 # ---------- HEADER ----------
 st.title("🔬 AquaScope AI")
@@ -64,66 +74,56 @@ elif page == "🔬 Microorganism Screening":
 
     st.header("🔬 Microorganism Screening")
 
-    st.write(
-        "Upload one or more microscopic images for screening."
+    st.write("Upload a microscopic image for AI-based screening.")
+
+    uploaded_file = st.file_uploader(
+        "Upload microscope image",
+        type=["jpg", "jpeg", "png"]
     )
 
-    uploaded_files = st.file_uploader(
-        "Upload microscope images",
-        type=["jpg", "jpeg", "png"],
-        accept_multiple_files=True
-    )
+    if uploaded_file:
 
-    if uploaded_files:
+        image = Image.open(uploaded_file).convert("RGB")
 
-        st.success(
-            f"{len(uploaded_files)} image(s) uploaded successfully!"
+        st.image(
+            image,
+            caption="Uploaded Microscopic Image",
+            use_container_width=True
         )
 
-        st.subheader("Uploaded Images")
-
-        for uploaded_file in uploaded_files:
-
-            st.image(
-                uploaded_file,
-                caption=uploaded_file.name,
-                use_container_width=True
-            )
-
-        st.divider()
-
-        if st.button("🔍 Analyze Images"):
+        if st.button("🔍 Analyze Image"):
 
             st.info("AI analysis is being performed...")
 
-            st.subheader("Screening Results")
+            # Resize image
+            img = image.resize((224, 224))
 
-            for uploaded_file in uploaded_files:
+            # Convert image to array
+            img_array = np.array(img) / 255.0
 
-                st.write(
-                    f"### 📷 {uploaded_file.name}"
-                )
+            # Add batch dimension
+            img_array = np.expand_dims(img_array, axis=0)
 
-                col1, col2 = st.columns(2)
+            # Prediction
+            prediction = model.predict(img_array)
 
-                with col1:
-                    st.write("**Detected Category**")
-                    st.write("Aquatic Microorganism")
+            predicted_class = np.argmax(prediction[0])
+            confidence = np.max(prediction[0]) * 100
 
-                with col2:
-                    st.write("**Confidence**")
-                    st.write("Demo Result")
+            st.subheader("🧬 Screening Result")
 
-                st.success(
-                    "Screening completed successfully."
-                )
+            st.success(
+                f"Predicted Class: {predicted_class}"
+            )
 
-                st.divider()
+            st.write(
+                f"Confidence: {confidence:.2f}%"
+            )
 
     else:
 
         st.warning(
-            "Please upload microscope images to start screening."
+            "Please upload a microscope image to start screening."
         )
 
 
@@ -133,24 +133,12 @@ elif page == "📊 Analysis":
     st.header("📊 Analysis Dashboard")
 
     st.write(
-        "This section displays analysis information generated "
-        "from uploaded microscopic images."
+        "AI-based classification results generated from "
+        "microscopic images."
     )
 
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric("Images Analyzed", "0")
-
-    with col2:
-        st.metric("Detected Samples", "0")
-
-    with col3:
-        st.metric("Status", "Ready")
-
     st.info(
-        "AI-based classification results will be displayed here "
-        "when the trained model is connected."
+        "Upload and analyze an image from the Microorganism Screening section."
     )
 
 
@@ -166,11 +154,11 @@ elif page == "ℹ️ About":
 
     st.write("### Key Features")
 
-    st.write("• Multiple microscopic image upload")
-    st.write("• AI-assisted screening")
-    st.write("• Rapid analysis")
+    st.write("• AI-based image classification")
+    st.write("• Microscopic image upload")
+    st.write("• Rapid screening")
     st.write("• Simple user interface")
-    st.write("• Future integration with trained AI models")
+    st.write("• Trained deep learning model")
 
     st.divider()
 
