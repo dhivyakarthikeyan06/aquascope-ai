@@ -1,5 +1,6 @@
 import streamlit as st
 
+# ---------- PAGE CONFIGURATION ----------
 st.set_page_config(
     page_title="AquaScope AI",
     page_icon="🔬",
@@ -54,55 +55,75 @@ if page == "🏠 Home":
     st.divider()
 
     st.info(
-        "Upload an aquatic microorganism image to begin the screening process."
+        "Upload aquatic microorganism images to begin the screening process."
     )
 
 
-# ---------- SCREENING ----------
+# ---------- MICROORGANISM SCREENING ----------
 elif page == "🔬 Microorganism Screening":
 
     st.header("🔬 Microorganism Screening")
 
-    uploaded_file = st.file_uploader(
-        "Upload microscope image",
+    st.write(
+        "Upload one or more microscopic images for screening."
+    )
+
+    uploaded_files = st.file_uploader(
+        "Upload microscope images",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=True
     )
 
     if uploaded_files:
 
-                for uploaded_file in uploaded_files:
+        st.success(
+            f"{len(uploaded_files)} image(s) uploaded successfully!"
+        )
+
+        st.subheader("Uploaded Images")
+
+        for uploaded_file in uploaded_files:
+
             st.image(
                 uploaded_file,
                 caption=uploaded_file.name,
                 use_container_width=True
             )
 
-        st.success("Image uploaded successfully!")
+        st.divider()
 
-        if st.button("🔍 Analyze Image"):
+        if st.button("🔍 Analyze Images"):
 
             st.info("AI analysis is being performed...")
 
-            st.subheader("Screening Result")
+            st.subheader("Screening Results")
 
-            col1, col2 = st.columns(2)
+            for uploaded_file in uploaded_files:
 
-            with col1:
-                st.write("**Detected Category**")
-                st.write("Aquatic Microorganism")
+                st.write(
+                    f"### 📷 {uploaded_file.name}"
+                )
 
-            with col2:
-                st.write("**Confidence**")
-                st.write("Demo Result")
+                col1, col2 = st.columns(2)
 
-            st.success(
-                "Screening completed successfully."
-            )
+                with col1:
+                    st.write("**Detected Category**")
+                    st.write("Aquatic Microorganism")
+
+                with col2:
+                    st.write("**Confidence**")
+                    st.write("Demo Result")
+
+                st.success(
+                    "Screening completed successfully."
+                )
+
+                st.divider()
 
     else:
+
         st.warning(
-            "Please upload a microscope image to start screening."
+            "Please upload microscope images to start screening."
         )
 
 
@@ -112,8 +133,8 @@ elif page == "📊 Analysis":
     st.header("📊 Analysis Dashboard")
 
     st.write(
-        "This section displays the analysis information generated "
-        "from the uploaded microscopic image."
+        "This section displays analysis information generated "
+        "from uploaded microscopic images."
     )
 
     col1, col2, col3 = st.columns(3)
@@ -145,7 +166,7 @@ elif page == "ℹ️ About":
 
     st.write("### Key Features")
 
-    st.write("• Microscopic image upload")
+    st.write("• Multiple microscopic image upload")
     st.write("• AI-assisted screening")
     st.write("• Rapid analysis")
     st.write("• Simple user interface")
