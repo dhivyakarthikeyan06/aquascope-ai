@@ -21,6 +21,24 @@ def load_model():
 
 model = load_model()
 
+# ---------- CLASS INFORMATION ----------
+class_names = ["Ciliates", "Diatoms"]
+
+characteristics = {
+    "Ciliates": [
+        "Single-celled microorganisms",
+        "Covered with hair-like cilia",
+        "Cilia help in movement and feeding",
+        "Commonly found in aquatic environments"
+    ],
+    "Diatoms": [
+        "Microscopic photosynthetic algae",
+        "Have a silica-based cell wall",
+        "Can have round, elongated or symmetrical shapes",
+        "Important primary producers in aquatic ecosystems"
+    ]
+}
+
 # ---------- HEADER ----------
 st.title("🔬 AquaScope AI")
 st.subheader("AI-Powered Aquatic Microorganism Screening")
@@ -64,21 +82,22 @@ if page == "🏠 Home":
         st.metric("Application", "Aquatic Screening")
 
     with col3:
-        st.metric("Analysis", "Image Based")
+        st.metric("Classes", "2")
 
     st.divider()
 
     st.info(
-        "Upload aquatic microorganism images to begin the screening process."
+        "Upload a microscopic image to screen for Ciliates or Diatoms."
     )
-
 
 # ---------- MICROORGANISM SCREENING ----------
 elif page == "🔬 Microorganism Screening":
 
     st.header("🔬 Microorganism Screening")
 
-    st.write("Upload a microscopic image for AI-based screening.")
+    st.write(
+        "Upload a microscopic image for AI-based screening."
+    )
 
     uploaded_file = st.file_uploader(
         "Upload microscope image",
@@ -97,22 +116,34 @@ elif page == "🔬 Microorganism Screening":
 
         if st.button("🔍 Analyze Image"):
 
-            st.info("AI analysis is being performed...")
+            with st.spinner("AI is analyzing the image..."):
 
-            # Resize image
-            img = image.resize((224, 224))
+                # Resize image
+                img = image.resize((224, 224))
 
-            # Convert image to array
-            img_array = np.array(img) / 255.0
+                # Convert image to array
+                img_array = np.array(img, dtype=np.float32)
 
-            # Add batch dimension
-            img_array = np.expand_dims(img_array, axis=0)
+                # Add batch dimension
+                img_array = np.expand_dims(img_array, axis=0)
 
-            # Prediction
-            prediction = model(img_array, training=False).numpy()
+                # Prediction
+                # preprocess_input is already included
+                # inside the trained model
+                prediction = model(
+                    img_array,
+                    training=False
+                ).numpy()
 
-            predicted_class = np.argmax(prediction[0])
-            confidence = np.max(prediction[0]) * 100
+                predicted_index = np.argmax(prediction[0])
+                confidence = float(
+                    np.max(prediction[0]) * 100
+                )
+
+                predicted_class = class_names[predicted_index]
+
+            # ---------- RESULT ----------
+            st.divider()
 
             st.subheader("🧬 Screening Result")
 
@@ -120,16 +151,51 @@ elif page == "🔬 Microorganism Screening":
                 f"Predicted Class: {predicted_class}"
             )
 
-            st.write(
-                f"Confidence: {confidence:.2f}%"
+            st.metric(
+                "Confidence",
+                f"{confidence:.2f}%"
             )
+
+            # ---------- CHARACTERISTICS ----------
+            st.subheader(
+                f"🔬 Characteristics of {predicted_class}"
+            )
+
+            for item in characteristics[predicted_class]:
+                st.write(f"• {item}")
+
+            # ---------- CONFIDENCE WARNING ----------
+            if confidence < 60:
+                st.warning(
+                    "Low confidence result. Manual microscopic "
+                    "verification is recommended."
+                )
+            else:
+                st.info(
+                    "The result is based on the trained AI image "
+                    "classification model."
+                )
+
+            # ---------- PROBABILITY ----------
+            st.subheader("📊 Class Probabilities")
+
+            for i, class_name in enumerate(class_names):
+
+                probability = prediction[0][i] * 100
+
+                st.write(
+                    f"{class_name}: {probability:.2f}%"
+                )
+
+                st.progress(
+                    float(prediction[0][i])
+                )
 
     else:
 
         st.warning(
             "Please upload a microscope image to start screening."
         )
-
 
 # ---------- ANALYSIS ----------
 elif page == "📊 Analysis":
@@ -141,10 +207,25 @@ elif page == "📊 Analysis":
         "microscopic images."
     )
 
-    st.info(
-        "Upload and analyze an image from the Microorganism Screening section."
-    )
+    col1, col2 = st.columns(2)
 
+    with col1:
+        st.metric("Supported Classes", "2")
+
+    with col2:
+        st.metric("Input Type", "Microscopic Image")
+
+    st.divider()
+
+    st.write("### Supported Microorganisms")
+
+    st.write("🔵 **Ciliates**")
+    st.write("🟢 **Diatoms**")
+
+    st.info(
+        "The AI model classifies uploaded microscopic images "
+        "into the supported microorganism classes."
+    )
 
 # ---------- ABOUT ----------
 elif page == "ℹ️ About":
@@ -152,8 +233,8 @@ elif page == "ℹ️ About":
     st.header("ℹ️ About AquaScope AI")
 
     st.write(
-        "AquaScope AI is designed as a low-cost intelligent microscopy "
-        "platform for rapid aquatic microorganism screening."
+        "AquaScope AI is designed as a low-cost intelligent "
+        "microscopy platform for rapid aquatic microorganism screening."
     )
 
     st.write("### Key Features")
@@ -161,10 +242,20 @@ elif page == "ℹ️ About":
     st.write("• AI-based image classification")
     st.write("• Microscopic image upload")
     st.write("• Rapid screening")
+    st.write("• Ciliates and Diatoms classification")
+    st.write("• Confidence score")
+    st.write("• Microorganism characteristics")
     st.write("• Simple user interface")
     st.write("• Trained deep learning model")
 
     st.divider()
+
+    st.write("### AI Model")
+
+    st.write(
+        "The system uses a MobileNetV2-based transfer learning "
+        "model trained for aquatic microorganism image classification."
+    )
 
     st.caption(
         "AquaScope AI — AI + Microscopy for Aquatic Microorganism Screening"
