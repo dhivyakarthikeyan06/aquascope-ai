@@ -71,12 +71,12 @@ elif page == "🔬 Microorganism Screening":
 
     if uploaded_files:
 
-        for uploaded_file in uploaded_files:
-    st.image(
-        uploaded_file,
-        caption=uploaded_file.name,
-        use_container_width=True
-    )
+                for uploaded_file in uploaded_files:
+            st.image(
+                uploaded_file,
+                caption=uploaded_file.name,
+                use_container_width=True
+            )
 
         st.success("Image uploaded successfully!")
 
