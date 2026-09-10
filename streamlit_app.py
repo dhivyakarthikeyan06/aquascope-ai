@@ -107,7 +107,7 @@ elif page == "🔬 Microorganism Screening":
             img_array = np.expand_dims(img_array, axis=0)
 
             # Prediction
-            prediction = model.predict(img_array)
+            prediction = model(img_array, training=False).numpy()
 
             predicted_class = np.argmax(prediction[0])
             confidence = np.max(prediction[0]) * 100
