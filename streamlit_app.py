@@ -13,11 +13,14 @@ st.set_page_config(
 # ---------- LOAD TRAINED MODEL ----------
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model(
+    model = tf.keras.models.load_model(
         "aquascope_model.h5",
         custom_objects={"TrueDivide": tf.math.divide},
         compile=False
     )
+    return model
+
+model = load_model()
 
 # ---------- HEADER ----------
 st.title("🔬 AquaScope AI")
