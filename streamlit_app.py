@@ -20,6 +20,19 @@ def load_model():
 
 model = load_model()
 
+# ---------- LOAD OOD REFERENCE ----------
+ood_data = np.load("aquascope_ood_reference.npz")
+
+ciliate_center = ood_data["ciliate_center"]
+diatom_center = ood_data["diatom_center"]
+OOD_THRESHOLD = float(ood_data["ood_threshold"])
+
+# ---------- EMBEDDING MODEL ----------
+embedding_model = tf.keras.Model(
+    inputs=model.input,
+    outputs=model.layers[-3].output
+)
+
 # ---------- CLASSES ----------
 class_names = ["Ciliates", "Diatoms"]
 
@@ -38,9 +51,6 @@ characteristics = {
         "Important primary producers in aquatic ecosystems"
     ]
 }
-
-# ---------- UNKNOWN THRESHOLD ----------
-UNKNOWN_THRESHOLD = 70.0
 
 # ---------- HEADER ----------
 st.title("🔬 AquaScope AI")
@@ -136,7 +146,7 @@ elif page == "🔬 Microorganism Screening":
                     axis=0
                 )
 
-                # Model prediction
+                # ---------- CLASS PREDICTION ----------
                 prediction = model(
                     img_array,
                     training=False
@@ -154,11 +164,45 @@ elif page == "🔬 Microorganism Screening":
                     predicted_index
                 ]
 
+                # ---------- OOD EMBEDDING ----------
+                embedding = embedding_model(
+                    img_array,
+                    training=False
+                ).numpy()[0]
+
+                embedding = embedding / (
+                    np.linalg.norm(embedding) + 1e-8
+                )
+
+                # ---------- DISTANCE FROM CLASS CENTERS ----------
+                ciliate_distance = (
+                    1 - np.dot(
+                        embedding,
+                        ciliate_center
+                    )
+                )
+
+                diatom_distance = (
+                    1 - np.dot(
+                        embedding,
+                        diatom_center
+                    )
+                )
+
+                min_distance = min(
+                    ciliate_distance,
+                    diatom_distance
+                )
+
+                # ---------- UNKNOWN CHECK ----------
+                is_unknown = (
+                    min_distance > OOD_THRESHOLD
+                )
+
             st.divider()
             st.subheader("🧬 Screening Result")
 
-            # ---------- UNRECOGNIZED CHECK ----------
-            if confidence < UNKNOWN_THRESHOLD:
+            if is_unknown:
 
                 st.error(
                     "⚠️ Unrecognized Microorganism"
@@ -169,7 +213,7 @@ elif page == "🔬 Microorganism Screening":
                 )
 
                 st.warning(
-                    "The image does not confidently match "
+                    "The image does not sufficiently match "
                     "the trained Ciliates or Diatoms classes. "
                     "Manual verification is recommended."
                 )
@@ -185,7 +229,6 @@ elif page == "🔬 Microorganism Screening":
                     f"{confidence:.2f}%"
                 )
 
-                # ---------- CHARACTERISTICS ----------
                 st.subheader(
                     f"🔬 Characteristics of {predicted_class}"
                 )
@@ -245,8 +288,8 @@ elif page == "📊 Analysis":
     st.write("🟢 Diatoms")
 
     st.info(
-        "Images with low model confidence are displayed "
-        "as Unrecognized for manual verification."
+        "Images that do not sufficiently match the trained "
+        "classes are displayed as Unrecognized for manual verification."
     )
 
 # ---------- ABOUT ----------
@@ -265,7 +308,7 @@ elif page == "ℹ️ About":
     st.write("• Microscopic image upload")
     st.write("• Rapid screening")
     st.write("• Ciliates and Diatoms classification")
-    st.write("• Unrecognized/low-confidence screening")
+    st.write("• OOD-based unrecognized screening")
     st.write("• Confidence score")
     st.write("• Microorganism characteristics")
     st.write("• Simple user interface")
@@ -276,7 +319,8 @@ elif page == "ℹ️ About":
 
     st.write(
         "The system uses a MobileNetV2-based transfer learning "
-        "model for aquatic microorganism image classification."
+        "model for aquatic microorganism image classification "
+        "with an additional embedding-based OOD screening layer."
     )
 
     st.caption(
