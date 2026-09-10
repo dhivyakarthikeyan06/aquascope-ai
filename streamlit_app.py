@@ -69,7 +69,7 @@ elif page == "🔬 Microorganism Screening":
         accept_multiple_files=True
     )
 
-    if uploaded_file is not None:
+    if uploaded_file:
 
         st.image(
             uploaded_file,
