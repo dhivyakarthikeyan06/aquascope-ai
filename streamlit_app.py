@@ -65,7 +65,8 @@ elif page == "🔬 Microorganism Screening":
 
     uploaded_file = st.file_uploader(
         "Upload microscope image",
-        type=["jpg", "jpeg", "png"]
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=True
     )
 
     if uploaded_file is not None:
