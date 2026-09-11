@@ -20,19 +20,24 @@ def load_model():
 
 model = load_model()
 
-# ---------- LOAD OOD REFERENCE ----------
-ood_data = np.load("aquascope_ood_reference.npz")
+# ---------- LOAD SIMILARITY REFERENCE ----------
+similarity_data = np.load(
+    "aquascope_similarity_reference.npz"
+)
 
-ciliate_center = ood_data["ciliate_center"]
-diatom_center = ood_data["diatom_center"]
-OOD_THRESHOLD = float(ood_data["ood_threshold"])
+all_embeddings = similarity_data["all_embeddings"]
+all_labels = similarity_data["all_labels"]
+SIMILARITY_THRESHOLD = float(
+    similarity_data["similarity_threshold"]
+)
 
 # ---------- EMBEDDING MODEL ----------
 embedding_model = tf.keras.Model(
     inputs=model.input,
-    outputs=model.layers[-3].output
+    outputs=model.get_layer(
+        "global_average_pooling2d"
+    ).output
 )
-
 # ---------- CLASSES ----------
 class_names = ["Ciliates", "Diatoms"]
 
@@ -164,41 +169,38 @@ elif page == "🔬 Microorganism Screening":
                     predicted_index
                 ]
 
-                # ---------- OOD EMBEDDING ----------
-                embedding = embedding_model(
-                    img_array,
-                    training=False
-                ).numpy()[0]
+               # ---------- SIMILARITY-BASED OOD CHECK ----------
+embedding = embedding_model(
+    img_array,
+    training=False
+).numpy()[0]
 
-                embedding = embedding / (
-                    np.linalg.norm(embedding) + 1e-8
-                )
+embedding = embedding / (
+    np.linalg.norm(embedding) + 1e-8
+)
 
-                # ---------- DISTANCE FROM CLASS CENTERS ----------
-                ciliate_distance = (
-                    1 - np.dot(
-                        embedding,
-                        ciliate_center
-                    )
-                )
+# Compare with all known training embeddings
+similarities = np.dot(
+    all_embeddings,
+    embedding
+)
 
-                diatom_distance = (
-                    1 - np.dot(
-                        embedding,
-                        diatom_center
-                    )
-                )
+best_similarity = float(
+    np.max(similarities)
+)
 
-                min_distance = min(
-                    ciliate_distance,
-                    diatom_distance
-                )
+best_index = int(
+    np.argmax(similarities)
+)
 
-                # ---------- UNKNOWN CHECK ----------
-                is_unknown = (
-                    min_distance > OOD_THRESHOLD
-                )
+closest_class = class_names[
+    int(all_labels[best_index])
+]
 
+# ---------- UNKNOWN CHECK ----------
+is_unknown = (
+    best_similarity < SIMILARITY_THRESHOLD
+) 
             st.divider()
             st.subheader("🧬 Screening Result")
 
