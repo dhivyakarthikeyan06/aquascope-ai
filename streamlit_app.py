@@ -219,7 +219,7 @@ is_unknown = (
                     "the trained Ciliates or Diatoms classes. "
                     "Manual verification is recommended."
                 )
-
+            
             else:
 
                 st.success(
